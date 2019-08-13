@@ -8,20 +8,16 @@ using Checkout.Core.Services;
 namespace Checkout.Core.Entities
 {
     public class Basket
-    {
-        private static IBasketService _basketService { get; set; }
-
+    {        
+        /// <summary>
+        /// BasketItems keyed on Sku
+        /// </summary>
         public IDictionary<string,BasketItem> BasketItems { get; private set; }
 
-        public decimal TotalPrice { get; private set; }
+        public IEnumerable<string> Skus => BasketItems.Keys;
 
-        static Basket()
-        {
-            _basketService = new BasketService(new OfferService(new OfferRepository())); //TODO added static construcor injection
-        }
-
-        public Basket()
-        {
+        public Basket() 
+        {            
             BasketItems = new Dictionary<string, BasketItem>();
         }
 
@@ -41,9 +37,7 @@ namespace Checkout.Core.Entities
                 var existingBasketItem = BasketItems[basketItem.Product.Sku];
 
                 existingBasketItem.Quantity += basketItem.Quantity;
-            }
-
-            TotalPrice  = _basketService.CalculateTotalPrice(this);
+            }           
         }
     }
 }

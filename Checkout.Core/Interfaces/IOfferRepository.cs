@@ -7,6 +7,6 @@ namespace Checkout.Core.Interfaces
 {
     public interface IOfferRepository
     {
-       IEnumerable<BaseOffer> GetOffers(IEnumerable<string> skus);
+       IEnumerable<Offer> GetOffers(IEnumerable<string> skus);
     }
 }

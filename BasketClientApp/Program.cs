@@ -1,67 +1,84 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using Checkout.Core;
 using Checkout.Core.Entities;
 using Checkout.Core.Interfaces;
 using Checkout.Core.Repositories;
 using Checkout.Core.Services;
+using CheckoutClientApp;
+using Microsoft.Extensions.Configuration;
 
 namespace BasketClientApp
 {
     class Program
     {
-        private static IBasketService _basketService { get; set; }
-
-        private static IProductService _productService { get; set; }
-
-        private static Basket _basket { get; set; }
-
-        static Program()
-        {
-            _basket = new Basket();
-            _basketService = new BasketService(new OfferService(new OfferRepository())); //TODO add dependency injection
-            _productService = new ProductService(new ProductRepository());
-        }
-
+        private static IConfigurationRoot _configuration;        
+        
         static void Main(string[] args)
-        {                     
+        {
+            LoadConfiguration();            
+            DisplayInstructions();
             ReadProductSkus();            
         }
 
+        private static void LoadConfiguration()
+        {
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
+            _configuration = builder.Build();
+        }
+        
+        private static void DisplayInstructions()
+        {
+            Console.WriteLine("Enter Individual Product Skus followed by <RETURN>.");
+            Console.WriteLine("Press <RETURN> without a product Sku to Checkout.");
+            Console.WriteLine("Your Basket will be cleared after Checkout.");
+        }
+
         private static void ReadProductSkus()
-        {            
+        {     
+            IList<string> skus = new List<string>();            
+
             while(true)
             {
                 string input = Console.ReadLine();
 
-                 var product = _productService.Get(input);
-
-                 if (product == null)
-                 {
-                     Console.WriteLine("No matching product found for Sku - " + input);
-                     continue;
-                 }
-                 else
-                 {
-                     _basket.Add(product, 1);            
-                     DisplayBasket();
-                 }                
+                if (!string.IsNullOrEmpty(input))
+                {
+                    skus.Add(input);
+                }
+                else
+                {
+                    ProcessBasket(skus);
+                    ClearBasket(ref skus);
+                }  
             }
         }
 
-        private static void DisplayBasket()
+        private static void ProcessBasket(IList<string> skus)
         {
-            Console.WriteLine( $"BASKET - ITEMS = { _basket.BasketItems.Values.Sum(x => x.Quantity)}");
-            foreach (var basketItem in _basket.BasketItems)
-            {
-                Console.WriteLine($"{basketItem.Value.Product.Description} X {basketItem.Value.Quantity}");
-            }
+            CheckoutHttpClient client = new CheckoutHttpClient(_configuration);
+            var totalPrice = client.GetTotalPrice(skus);
 
-            Console.WriteLine($"TOTAL PRICE = { _basket.TotalPrice.ToString("£##.00") }");
+            if (totalPrice.Result != null)
+            {
+                Console.WriteLine($"Total Price = {totalPrice.Result.Value.ToString("£0.00")}");
+            }
         }
 
+        private static void ClearBasket(ref IList<string> skus)
+        {
+            skus = new List<string>();
+        }        
     }
 }

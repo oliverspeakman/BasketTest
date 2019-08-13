@@ -7,6 +7,6 @@ namespace Checkout.Core.Interfaces
 {
     public interface IBasketService
     {        
-        decimal CalculateTotalPrice(Basket basket);
+        decimal CalculateTotalPrice(IEnumerable<string> skus);
     }
 }

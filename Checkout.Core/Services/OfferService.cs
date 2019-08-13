@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,15 +18,8 @@ namespace Checkout.Core.Services
             _offerRepository = offerRepository;
         }
 
-        public void CreateOffer(BaseOffer offer)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IDictionary<string, BaseOffer> GetOffers(Basket basket)
-        {
-            var skus = basket.BasketItems.Keys;
-
+        public IDictionary<string, Offer> GetOffers(IEnumerable<string> skus)
+        {            
             var offers = _offerRepository.GetOffers(skus);
 
             var matchingOffers = offers.Where(x => skus.Contains(x.Sku)).ToDictionary(x => x.Sku);
@@ -33,7 +27,7 @@ namespace Checkout.Core.Services
             return matchingOffers;
         }
 
-        public decimal CalculateOfferPrice(BasketItem basketItem, BaseOffer matchingOffer)
+        public decimal CalculateOfferPrice(BasketItem basketItem, Offer matchingOffer)
         {
 
             switch (matchingOffer.OfferType)
@@ -52,10 +46,12 @@ namespace Checkout.Core.Services
             var totalQuantity = basketItem.Quantity;
             var quantityRequired = offer.QuantityRequired;
 
-            var offersMatched = totalQuantity % quantityRequired;
+            var offersMatched = totalQuantity / quantityRequired;
+            var remainder = totalQuantity % quantityRequired;
+
 
             var offerPrice = offersMatched * offer.Price;
-            var unmatchingQuantity = quantityRequired - offersMatched;
+            var unmatchingQuantity = remainder;
 
             var nonOfferPrice = unmatchingQuantity * basketItem.Product.UnitPrice;
 

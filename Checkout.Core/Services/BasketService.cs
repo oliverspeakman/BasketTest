@@ -9,32 +9,33 @@ namespace Checkout.Core
 {
     public class BasketService : IBasketService
     {
-        private IOfferService _offerService { get; set;  }
+        private IOfferService _offerService { get;}
+        private IProductService _productService { get;}
 
-        public BasketService(IOfferService offerService)
+        public BasketService(IOfferService offerService, IProductService productService)
         {
             _offerService = offerService;
+            _productService = productService;
         }
 
-        public void Add(Basket basket, Product product)
-        {
-            throw new NotImplementedException();
-        }
-
-        public decimal CalculateTotalPrice(Basket basket)
+        public decimal CalculateTotalPrice(IEnumerable<string> skus)
         {
             decimal totalPrice = 0;
-            var offers = _offerService.GetOffers(basket);
 
-            foreach (var basketItem in basket.BasketItems.Values)
+            var basket = this.CreateBasket(skus);
+            var offers = _offerService.GetOffers(basket.Skus);
+
+            foreach (var sku in basket.Skus)
             {
-                var offer = offers[basketItem.Product.Sku];
+                BasketItem basketItem = basket.BasketItems[sku];
+
+                var offer = offers[sku];
                 
                 decimal basketItemPrice;
 
                 if (offer != null)
                 {
-                    basketItemPrice = _offerService.CalculateOfferPrice(basketItem,offer);
+                    basketItemPrice = _offerService.CalculateOfferPrice(basketItem, offer);
                 }
                 else
                 {
@@ -45,6 +46,27 @@ namespace Checkout.Core
             }
 
             return totalPrice;
+        }
+
+        private Basket CreateBasket(IEnumerable<string> skus)
+        {
+            var basket = new Basket();
+
+            foreach (var sku in skus)
+            {
+                var product = _productService.Get(sku);
+
+                if (product != null)
+                {
+                    basket.Add(product,1);
+                }
+                else
+                {
+                    //TODO MVP - add an invalid products section to the basket
+                }
+            }
+
+            return basket;
         }
     }
 }

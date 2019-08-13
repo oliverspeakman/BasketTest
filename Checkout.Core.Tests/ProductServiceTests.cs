@@ -2,7 +2,6 @@ using Checkout.Core.Entities;
 using Checkout.Core.Interfaces;
 using Checkout.Core.Repositories;
 using Checkout.Core.Services;
-using Checkout.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace Checkout.Core.Tests
